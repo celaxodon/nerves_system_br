@@ -158,8 +158,9 @@ fi
 
 # Build the firmware image
 echo "Building $FW_FILENAME..."
-ROOTFS="$TMP_DIR/combined.squashfs" $FWUP -c -f "$FWUP_CONFIG" \
-	-o "$FW_FILENAME"
+echo "FWUP: ${FWUP}"
+ROOTFS="$TMP_DIR/combined.squashfs" $FWUP --unsafe -c -f "$FWUP_CONFIG" \
+	-o "$FW_FILENAME" 
 
 if [[ ! -z "$IMG_FILENAME" ]]; then
     # Create the output directory - just in case
