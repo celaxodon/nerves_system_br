@@ -1,0 +1,419 @@
+From a2ae7e0094b20f490f0acc0372edf4e8f89802d9 Mon Sep 17 00:00:00 2001
+From: Graham Leva <celaxodon@gmail.com>
+Date: Mon, 7 Dec 2020 22:40:09 -0600
+Subject: [PATCH 15/17] package/hardware-nvidia: add umbrella package for
+ Jetson boards
+
+Adds an umbrella package, 'hardware-nvidia' that has selectors
+for the hardware libraries required for building NVIDIA's Jetson
+line of boards. Most are required to build various
+DTBs and other firmware for different boards.
+
+The sub-packages contained in this package are all required
+for the Jetson Nano board:
+
+- platform-t210-common
+- platform-t210-jetson
+- platform-t210-porg
+- platform-tegra-common
+- soc-t210
+- soc-tegra
+
+Signed-off-by: Graham Leva <celaxodon@gmail.com>
+---
+ DEVELOPERS                                    |  1 +
+ package/Config.in                             |  1 +
+ package/hardware-nvidia/Config.in             | 33 +++++++++++++++++++
+ package/hardware-nvidia/hardware-nvidia.mk    | 10 ++++++
+ .../platform-t210-common/Config.in            |  7 ++++
+ .../platform-t210-common.hash                 |  2 ++
+ .../platform-t210-common.mk                   | 18 ++++++++++
+ .../platform-t210-jetson/Config.in            |  7 ++++
+ .../platform-t210-jetson.hash                 |  2 ++
+ .../platform-t210-jetson.mk                   | 18 ++++++++++
+ .../platform-t210-porg/Config.in              |  7 ++++
+ .../platform-t210-porg.hash                   |  2 ++
+ .../platform-t210-porg/platform-t210-porg.mk  | 18 ++++++++++
+ .../platform-tegra-common/Config.in           |  7 ++++
+ .../platform-tegra-common.hash                |  2 ++
+ .../platform-tegra-common.mk                  | 18 ++++++++++
+ package/hardware-nvidia/soc-t210/Config.in    |  7 ++++
+ .../hardware-nvidia/soc-t210/soc-t210.hash    |  1 +
+ package/hardware-nvidia/soc-t210/soc-t210.mk  | 18 ++++++++++
+ package/hardware-nvidia/soc-tegra/Config.in   |  8 +++++
+ .../hardware-nvidia/soc-tegra/soc-tegra.hash  |  2 ++
+ .../hardware-nvidia/soc-tegra/soc-tegra.mk    | 18 ++++++++++
+ 22 files changed, 207 insertions(+)
+ create mode 100644 package/hardware-nvidia/Config.in
+ create mode 100644 package/hardware-nvidia/hardware-nvidia.mk
+ create mode 100644 package/hardware-nvidia/platform-t210-common/Config.in
+ create mode 100644 package/hardware-nvidia/platform-t210-common/platform-t210-common.hash
+ create mode 100644 package/hardware-nvidia/platform-t210-common/platform-t210-common.mk
+ create mode 100644 package/hardware-nvidia/platform-t210-jetson/Config.in
+ create mode 100644 package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.hash
+ create mode 100644 package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.mk
+ create mode 100644 package/hardware-nvidia/platform-t210-porg/Config.in
+ create mode 100644 package/hardware-nvidia/platform-t210-porg/platform-t210-porg.hash
+ create mode 100644 package/hardware-nvidia/platform-t210-porg/platform-t210-porg.mk
+ create mode 100644 package/hardware-nvidia/platform-tegra-common/Config.in
+ create mode 100644 package/hardware-nvidia/platform-tegra-common/platform-tegra-common.hash
+ create mode 100644 package/hardware-nvidia/platform-tegra-common/platform-tegra-common.mk
+ create mode 100644 package/hardware-nvidia/soc-t210/Config.in
+ create mode 100644 package/hardware-nvidia/soc-t210/soc-t210.hash
+ create mode 100644 package/hardware-nvidia/soc-t210/soc-t210.mk
+ create mode 100644 package/hardware-nvidia/soc-tegra/Config.in
+ create mode 100644 package/hardware-nvidia/soc-tegra/soc-tegra.hash
+ create mode 100644 package/hardware-nvidia/soc-tegra/soc-tegra.mk
+
+diff --git a/DEVELOPERS b/DEVELOPERS
+index bb57865e11..7d5731c168 100644
+--- a/DEVELOPERS
++++ b/DEVELOPERS
+@@ -1017,6 +1017,7 @@ F:	package/sofia-sip/
+ N:  Graham Leva <celaxodon@gmail.com>
+ F:  package/linux-nvidia/
+ F:  package/linux-nvgpu/
++F:  package/hardware-nvidia/
+ 
+ N:	Grzegorz Blach <grzegorz@blach.pl>
+ F:	fs/f2fs/
+diff --git a/package/Config.in b/package/Config.in
+index d7ab573e04..ab05e391e2 100644
+--- a/package/Config.in
++++ b/package/Config.in
+@@ -464,6 +464,7 @@ endmenu
+ 	source "package/gpsd/Config.in"
+ 	source "package/gptfdisk/Config.in"
+ 	source "package/gvfs/Config.in"
++	source "package/hardware-nvidia/Config.in"
+ 	source "package/hdparm/Config.in"
+ 	source "package/hwdata/Config.in"
+ 	source "package/hwloc/Config.in"
+diff --git a/package/hardware-nvidia/Config.in b/package/hardware-nvidia/Config.in
+new file mode 100644
+index 0000000000..04d0566ff7
+--- /dev/null
++++ b/package/hardware-nvidia/Config.in
+@@ -0,0 +1,33 @@
++menuconfig BR2_PACKAGE_HARDWARE_NVIDIA
++	bool "Nvidia hardware libraries"
++	depends on BR2_LINUX_KERNEL
++	select BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T210_COMMON
++	select BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T210_JETSON
++	select BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T210_PORG
++	select BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_TEGRA_COMMON
++	select BR2_PACKAGE_HARDWARE_NVIDIA_SOC_T210
++	select BR2_PACKAGE_HARDWARE_NVIDIA_SOC_TEGRA
++	help
++	  Linux NVIDIA hardware source trees
++
++	  These must be arranged into a specific directory structure.
++	  Mirrors Linux_for_Tegra/sources/hardware/nvidia
++
++if BR2_PACKAGE_HARDWARE_NVIDIA
++
++source "package/hardware-nvidia/platform-t210-common/Config.in"
++source "package/hardware-nvidia/platform-t210-jetson/Config.in"
++source "package/hardware-nvidia/platform-t210-porg/Config.in"
++source "package/hardware-nvidia/platform-tegra-common/Config.in"
++source "package/hardware-nvidia/soc-t210/Config.in"
++source "package/hardware-nvidia/soc-tegra/Config.in"
++
++endif
++
++# Unimplemented parts of the full DTS tree:
++# config BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T18X_COMMON
++# config BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T18X_QUILL
++# config BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T19X_COMMON
++# config BR2_PACKAGE_HARDWARE_NVIDIA_PLATFORM_T19X_STARDUST_BCT
++# config BR2_PACKAGE_HARDWARE_NVIDIA_SOC_T18X
++# config BR2_PACKAGE_HARDWARE_NVIDIA_SOC_T19X
+diff --git a/package/hardware-nvidia/hardware-nvidia.mk b/package/hardware-nvidia/hardware-nvidia.mk
+new file mode 100644
+index 0000000000..1c56b98094
+--- /dev/null
++++ b/package/hardware-nvidia/hardware-nvidia.mk
+@@ -0,0 +1,10 @@
++################################################################################
++#
++# NVIDIA hardware packages
++#
++################################################################################
++
++# $(BUILD_DIR)/hardware/nvidia maps to Linux_for_Tegra/sources/hardware/nvidia
++NV_BUILD_KERNEL_DTS_ROOT = $(BUILD_DIR)/hardware/nvidia
++
++include $(sort $(wildcard package/hardware-nvidia/*/*.mk))
+diff --git a/package/hardware-nvidia/platform-t210-common/Config.in b/package/hardware-nvidia/platform-t210-common/Config.in
+new file mode 100644
+index 0000000000..153d8b9823
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-common/Config.in
+@@ -0,0 +1,7 @@
++config BR2_PACKAGE_PLATFORM_T210_COMMON
++	bool "Platform T210 Common Device Tree Source"
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA T210 Common hardware drivers
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/platform-t210-common/platform-t210-common.hash b/package/hardware-nvidia/platform-t210-common/platform-t210-common.hash
+new file mode 100644
+index 0000000000..e5eb293a3f
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-common/platform-t210-common.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256 fe4488136dbb14a6917b590b2f127ed2b3f58dbd60c3d847908e6d2f440d1ea5  platform-t210-common-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/platform-t210-common/platform-t210-common.mk b/package/hardware-nvidia/platform-t210-common/platform-t210-common.mk
+new file mode 100644
+index 0000000000..2c7a8a439d
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-common/platform-t210-common.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# t210 Common DTS Source
++#
++################################################################################
++
++PLATFORM_T210_COMMON_LICENSE = GPL-2.0
++PLATFORM_T210_COMMON_LICENSE_FILES = kernel-dts/tegra210-linux-4.14.dtsi
++PLATFORM_T210_COMMON_VERSION = tegra-l4t-r32.4.2
++PLATFORM_T210_COMMON_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/platform/t210/common.git
++
++define PLATFORM_T210_COMMON_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210
++	ln -s $(BUILD_DIR)/platform-t210-common-$(PLATFORM_T210_COMMON_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210/common
++endef
++
++$(eval $(generic-package))
+diff --git a/package/hardware-nvidia/platform-t210-jetson/Config.in b/package/hardware-nvidia/platform-t210-jetson/Config.in
+new file mode 100644
+index 0000000000..682afa45a4
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-jetson/Config.in
+@@ -0,0 +1,7 @@
++config BR2_PACKAGE_PLATFORM_T210_JETSON
++	bool "Platform T210 Jetson Device Tree Source"
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA T210 Jetson Device Tree Source
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.hash b/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.hash
+new file mode 100644
+index 0000000000..3e942641ec
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256  183042e37874e65512867ca3736aff1df6fd3b0e7cbe821a73a8d1b90eef2f77  platform-t210-jetson-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.mk b/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.mk
+new file mode 100644
+index 0000000000..15c138ac3f
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-jetson/platform-t210-jetson.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# t210 jetson DTS
++#
++################################################################################
++
++PLATFORM_T210_JETSON_LICENSE = GPL-2.0
++PLATFORM_T210_JETSON_LICENSE_FILES = kernel-dts/tegra210-jetson-common.dtsi
++PLATFORM_T210_JETSON_VERSION = tegra-l4t-r32.4.2
++PLATFORM_T210_JETSON_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/platform/t210/jetson.git
++
++define PLATFORM_T210_JETSON_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210
++	ln -s $(BUILD_DIR)/platform-t210-jetson-$(PLATFORM_T210_JETSON_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210/jetson
++endef
++
++$(eval $(generic-package))
+diff --git a/package/hardware-nvidia/platform-t210-porg/Config.in b/package/hardware-nvidia/platform-t210-porg/Config.in
+new file mode 100644
+index 0000000000..b362788383
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-porg/Config.in
+@@ -0,0 +1,7 @@
++config BR2_PACKAGE_PLATFORM_T210_PORG
++	bool "Platform T210 Porg Device Tree Source"
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA T210 Porg Device Tree Source
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.hash b/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.hash
+new file mode 100644
+index 0000000000..c29e52300b
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256 6fa0452410d406e02d86b1e67bd7e216a2cefa3d15375c00319b1f74ac8e8e75  platform-t210-porg-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.mk b/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.mk
+new file mode 100644
+index 0000000000..fb6cea366c
+--- /dev/null
++++ b/package/hardware-nvidia/platform-t210-porg/platform-t210-porg.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# Platform T210 Porg
++#
++################################################################################
++
++PLATFORM_T210_PORG_LICENSE = GPL-2.0
++PLATFORM_T210_PORG_LICENSE_FILES = kernel-dts/tegra210-porg-p3448-common.dtsi
++PLATFORM_T210_PORG_VERSION = tegra-l4t-r32.4.2
++PLATFORM_T210_PORG_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/platform/t210/porg.git
++
++define PLATFORM_T210_PORG_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210
++	ln -s $(BUILD_DIR)/platform-t210-porg-$(PLATFORM_T210_PORG_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/platform/t210/porg
++endef
++
++$(eval $(generic-package))
+diff --git a/package/hardware-nvidia/platform-tegra-common/Config.in b/package/hardware-nvidia/platform-tegra-common/Config.in
+new file mode 100644
+index 0000000000..4a8b9457fd
+--- /dev/null
++++ b/package/hardware-nvidia/platform-tegra-common/Config.in
+@@ -0,0 +1,7 @@
++config BR2_PACKAGE_PLATFORM_TEGRA_COMMON
++	bool "Platform Tegra Common Device Tree Source"
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA Tegra Common Device Tree Source
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.hash b/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.hash
+new file mode 100644
+index 0000000000..b62f24178b
+--- /dev/null
++++ b/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256  8bd3a95a7fd2566fe650e9d84fa0584e521cfd5a6a14750937b3d51879ce257e  platform-tegra-common-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.mk b/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.mk
+new file mode 100644
+index 0000000000..5bcc3c2c1d
+--- /dev/null
++++ b/package/hardware-nvidia/platform-tegra-common/platform-tegra-common.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# t210 Common DTS source
++#
++################################################################################
++
++PLATFORM_TEGRA_COMMON_LICENSE = GPL-2.0
++PLATFORM_TEGRA_COMMON_LICENSE_FILES = kernel-dts/audio/tegra-platforms-audio-enable.dtsi
++PLATFORM_TEGRA_COMMON_VERSION = tegra-l4t-r32.4.2
++PLATFORM_TEGRA_COMMON_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/platform/tegra/common.git
++
++define PLATFORM_TEGRA_COMMON_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/platform/tegra
++	ln -s $(BUILD_DIR)/platform-tegra-common-$(PLATFORM_TEGRA_COMMON_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/platform/tegra/common
++endef
++
++$(eval $(generic-package))
+diff --git a/package/hardware-nvidia/soc-t210/Config.in b/package/hardware-nvidia/soc-t210/Config.in
+new file mode 100644
+index 0000000000..5d155f36c8
+--- /dev/null
++++ b/package/hardware-nvidia/soc-t210/Config.in
+@@ -0,0 +1,7 @@
++config BR2_PACKAGE_SOC_T210
++	bool "SoC T210 Device Tree Source"
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA T210 Jetson hardware drivers
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/soc-t210/soc-t210.hash b/package/hardware-nvidia/soc-t210/soc-t210.hash
+new file mode 100644
+index 0000000000..d1a7643f7d
+--- /dev/null
++++ b/package/hardware-nvidia/soc-t210/soc-t210.hash
+@@ -0,0 +1 @@
++sha256  a517bf3ec46d63d6f69f85624b03dfadddb39b914a48fb4af8d0705c2f3308a2  soc-t210-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/soc-t210/soc-t210.mk b/package/hardware-nvidia/soc-t210/soc-t210.mk
+new file mode 100644
+index 0000000000..dbba712fa4
+--- /dev/null
++++ b/package/hardware-nvidia/soc-t210/soc-t210.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# SOC t210
++#
++################################################################################
++
++SOC_T210_LICENSE = GPL-2.0
++SOC_T210_LICENSE_FILES = kernel-dts/tegra210-soc/tegra210-soc-base.dtsi
++SOC_T210_VERSION = tegra-l4t-r32.4.2
++SOC_T210_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/soc/t210.git
++
++define SOC_T210_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/soc
++	ln -s $(BUILD_DIR)/soc-t210-$(SOC_T210_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/soc/t210
++endef
++
++$(eval $(generic-package))
+diff --git a/package/hardware-nvidia/soc-tegra/Config.in b/package/hardware-nvidia/soc-tegra/Config.in
+new file mode 100644
+index 0000000000..58a9b879e6
+--- /dev/null
++++ b/package/hardware-nvidia/soc-tegra/Config.in
+@@ -0,0 +1,8 @@
++config BR2_PACKAGE_SOC_TEGRA
++	bool "SoC Tegra Device Tree Source"
++	depends on BR2_LINUX_KERNEL
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  NVIDIA Tegra Jetson hardware drivers
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/hardware-nvidia/soc-tegra/soc-tegra.hash b/package/hardware-nvidia/soc-tegra/soc-tegra.hash
+new file mode 100644
+index 0000000000..7a6a02bab9
+--- /dev/null
++++ b/package/hardware-nvidia/soc-tegra/soc-tegra.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256  c9585994834af4878af952e0c2673da9a3a7bc27d4e107d9b65d46938dfbdf5c  soc-tegra-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/hardware-nvidia/soc-tegra/soc-tegra.mk b/package/hardware-nvidia/soc-tegra/soc-tegra.mk
+new file mode 100644
+index 0000000000..3b92dcb027
+--- /dev/null
++++ b/package/hardware-nvidia/soc-tegra/soc-tegra.mk
+@@ -0,0 +1,18 @@
++################################################################################
++#
++# SOC Tegra
++#
++################################################################################
++
++SOC_TEGRA_VERSION = tegra-l4t-r32.4.2
++SOC_TEGRA_SITE = git://nv-tegra.nvidia.com/device/hardware/nvidia/soc/tegra.git
++SOC_TEGRA_LICENSE = GPL-2.0
++SOC_TEGRA_LICENSE_FILES = kernel-include/dt-bindings/media/tegra-vi.h
++
++define SOC_TEGRA_CONFIGURE_CMDS
++	mkdir -p $(NV_BUILD_KERNEL_DTS_ROOT)/soc
++	ln -s $(BUILD_DIR)/soc-tegra-$(SOC_TEGRA_VERSION) \
++		$(NV_BUILD_KERNEL_DTS_ROOT)/soc/tegra
++endef
++
++$(eval $(generic-package))
+-- 
+2.17.1
+

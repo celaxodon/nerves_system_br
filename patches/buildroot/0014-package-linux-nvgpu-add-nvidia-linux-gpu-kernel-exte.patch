@@ -1,0 +1,112 @@
+From a0e9f0ab23dcce39de374448ed5ea3f8d9bde16a Mon Sep 17 00:00:00 2001
+From: Graham Leva <celaxodon@gmail.com>
+Date: Mon, 7 Dec 2020 22:35:20 -0600
+Subject: [PATCH 14/17] package/linux-nvgpu: add nvidia linux gpu kernel
+ extensions package
+
+A required dependency for building NVIDIA's Linux for Tegra
+kernel for the Jetson linen of boards.
+
+Signed-off-by: Graham Leva <celaxodon@gmail.com>
+---
+ DEVELOPERS                           |  1 +
+ linux/Config.ext.in                  |  2 ++
+ package/Config.in                    |  1 +
+ package/linux-nvgpu/Config.in        |  9 +++++++++
+ package/linux-nvgpu/linux_nvgpu.hash |  2 ++
+ package/linux-nvgpu/linux_nvgpu.mk   | 17 +++++++++++++++++
+ 6 files changed, 32 insertions(+)
+ create mode 100644 package/linux-nvgpu/Config.in
+ create mode 100644 package/linux-nvgpu/linux_nvgpu.hash
+ create mode 100644 package/linux-nvgpu/linux_nvgpu.mk
+
+diff --git a/DEVELOPERS b/DEVELOPERS
+index 906db7795a..bb57865e11 100644
+--- a/DEVELOPERS
++++ b/DEVELOPERS
+@@ -1016,6 +1016,7 @@ F:	package/sofia-sip/
+ 
+ N:  Graham Leva <celaxodon@gmail.com>
+ F:  package/linux-nvidia/
++F:  package/linux-nvgpu/
+ 
+ N:	Grzegorz Blach <grzegorz@blach.pl>
+ F:	fs/f2fs/
+diff --git a/linux/Config.ext.in b/linux/Config.ext.in
+index e817b4da13..df7a8da33d 100644
+--- a/linux/Config.ext.in
++++ b/linux/Config.ext.in
+@@ -53,10 +53,12 @@ config BR2_LINUX_KERNEL_EXT_RTAI
+ 	  RTAI Kernel part.
+ 
+ #-------------------------------------------------------------------------------
++
+ # NVIDIA Linux Tegra drivers and patches
+ config BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
+     bool "NVIDIA Linux Tegra drivers and patches"
+     select BR2_PACKAGE_LINUX_NVIDIA
++    select BR2_PACKAGE_LINUX_NVGPU
+     help
+       NVIDIA Linux Tegra kernel drivers and patches
+ 
+diff --git a/package/Config.in b/package/Config.in
+index f65bc07f0e..d7ab573e04 100644
+--- a/package/Config.in
++++ b/package/Config.in
+@@ -481,6 +481,7 @@ endmenu
+ 	source "package/libubootenv/Config.in"
+ 	source "package/libuio/Config.in"
+ 	source "package/linux-backports/Config.in"
++	source "package/linux-nvgpu/Config.in"
+ 	source "package/linux-nvidia/Config.in"
+ 	source "package/linux-serial-test/Config.in"
+ 	source "package/linuxconsoletools/Config.in"
+diff --git a/package/linux-nvgpu/Config.in b/package/linux-nvgpu/Config.in
+new file mode 100644
+index 0000000000..0c3f8961aa
+--- /dev/null
++++ b/package/linux-nvgpu/Config.in
+@@ -0,0 +1,9 @@
++config BR2_PACKAGE_LINUX_NVGPU
++	bool "Linux NVGPU Tegra driver"
++	depends on BR2_LINUX_KERNEL
++	depends on BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA
++	help
++	  The download helper for NVIDIA NVGPU Tegra driver kernel
++	  patches.
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/linux-nvgpu/linux_nvgpu.hash b/package/linux-nvgpu/linux_nvgpu.hash
+new file mode 100644
+index 0000000000..90ce507cdf
+--- /dev/null
++++ b/package/linux-nvgpu/linux_nvgpu.hash
+@@ -0,0 +1,2 @@
++# Locally calculated
++sha256  23edd93a980161a147f34fcb8b07b9a1c04967439ebcd4356607fe1b4923f904  linux-nvgpu-tegra-l4t-r32.4.2.tar.gz
+diff --git a/package/linux-nvgpu/linux_nvgpu.mk b/package/linux-nvgpu/linux_nvgpu.mk
+new file mode 100644
+index 0000000000..38cc072cd3
+--- /dev/null
++++ b/package/linux-nvgpu/linux_nvgpu.mk
+@@ -0,0 +1,17 @@
++################################################################################
++#
++# Linux NVGPU for Tegra
++#
++################################################################################
++
++LINUX_NVGPU_VERSION = tegra-l4t-r32.4.2
++LINUX_NVGPU_SITE = git://nv-tegra.nvidia.com/linux-nvgpu.git
++LINUX_NVGPU_LICENSE = GPL-2.0
++LINUX_NVGPU_LICENSE_FILES = include/linux/tegra_gpu_t19x.h
++
++# L4T build process requires specific directory layouts
++define LINUX_NVGPU_CONFIGURE_CMDS
++	ln -s $(BUILD_DIR)/linux-nvgpu-$(LINUX_NVGPU_VERSION) $(BUILD_DIR)/nvgpu
++endef
++
++$(eval $(generic-package))
+-- 
+2.17.1
+

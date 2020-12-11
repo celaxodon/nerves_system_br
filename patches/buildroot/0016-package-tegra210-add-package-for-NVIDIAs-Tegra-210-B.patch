@@ -1,0 +1,239 @@
+From e17fe9fd242417a051b335ed68f8879d51c133a5 Mon Sep 17 00:00:00 2001
+From: Graham Leva <celaxodon@gmail.com>
+Date: Thu, 10 Dec 2020 14:20:47 -0600
+Subject: [PATCH 16/17] package/tegra210: add package for NVIDIAs Tegra 210 BSP
+
+Submitted version is for r32.4.2.  Required for signing binaries
+for the Jetson Nano board.
+
+Signed-off-by: Graham Leva <celaxodon@gmail.com>
+---
+ DEVELOPERS                      |   1 +
+ package/Config.in.host          |   1 +
+ package/tegra210/Config.in      |   9 +++
+ package/tegra210/Config.in.host |   9 +++
+ package/tegra210/tegra210.hash  |  12 +++
+ package/tegra210/tegra210.mk    | 136 ++++++++++++++++++++++++++++++++
+ 6 files changed, 168 insertions(+)
+ create mode 100644 package/tegra210/Config.in
+ create mode 100644 package/tegra210/Config.in.host
+ create mode 100644 package/tegra210/tegra210.hash
+ create mode 100644 package/tegra210/tegra210.mk
+
+diff --git a/DEVELOPERS b/DEVELOPERS
+index 7d5731c168..6ac5b172d7 100644
+--- a/DEVELOPERS
++++ b/DEVELOPERS
+@@ -1018,6 +1018,7 @@ N:  Graham Leva <celaxodon@gmail.com>
+ F:  package/linux-nvidia/
+ F:  package/linux-nvgpu/
+ F:  package/hardware-nvidia/
++F:  package/tegra210/
+ 
+ N:	Grzegorz Blach <grzegorz@blach.pl>
+ F:	fs/f2fs/
+diff --git a/package/Config.in.host b/package/Config.in.host
+index c69c756f3a..aaadaed8a7 100644
+--- a/package/Config.in.host
++++ b/package/Config.in.host
+@@ -81,6 +81,7 @@ menu "Host utilities"
+ 	source "package/sunxi-tools/Config.in.host"
+ 	source "package/swig/Config.in.host"
+ 	source "package/systemd/Config.in.host"
++	source "package/tegra210/Config.in"
+ 	source "package/tegrarcm/Config.in.host"
+ 	source "package/ti-cgt-pru/Config.in.host"
+ 	source "package/uboot-tools/Config.in.host"
+diff --git a/package/tegra210/Config.in b/package/tegra210/Config.in
+new file mode 100644
+index 0000000000..67bea80dae
+--- /dev/null
++++ b/package/tegra210/Config.in
+@@ -0,0 +1,9 @@
++config BR2_PACKAGE_TEGRA210
++	bool "Tegra T210 Board Support Package"
++	depends on BR2_PACKAGE_LINUX_NVIDIA
++	help
++	  NVIDIA Tegra210 board support package.
++	  Includes binaries and tools required for the flashing and
++	  booting process.
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/tegra210/Config.in.host b/package/tegra210/Config.in.host
+new file mode 100644
+index 0000000000..7d99acf8a6
+--- /dev/null
++++ b/package/tegra210/Config.in.host
+@@ -0,0 +1,9 @@
++config BR2_PACKAGE_TEGRA210
++	bool "host Tegra T210 Board Support Package"
++	depends on BR2_PACKAGE_LINUX_NVIDIA
++	help
++	  NVIDIA Tegra210 board support package.
++	  Includes binaries and tools required for the flashing and
++	  booting process.
++
++	  https://developer.nvidia.com/embedded/linux-tegra
+diff --git a/package/tegra210/tegra210.hash b/package/tegra210/tegra210.hash
+new file mode 100644
+index 0000000000..a79bf5e7ff
+--- /dev/null
++++ b/package/tegra210/tegra210.hash
+@@ -0,0 +1,12 @@
++# Locally calculated
++sha256  bc89cbb20286bbe7681a3ff2f43d1a87f33cdde2506ec8c0afe2e88401f24e58  Tegra210_Linux_R32.4.2_aarch64.tbz2
++sha256  bd28b0c5aeeb00eb11d3ec6f6f3449d4b3a40100914258332734a53527997526  bootloader/LICENSE
++sha256  fc3500d112bac03d12beb25b361a9657d81b26318be7d116394c4136155082ca  bootloader/LICENSE.u-boot
++sha256  0ef77b4d7ffb0195540e394863dd969594ba8e21cb4b810822b4d42c1ab8ef72  bootloader/LICENSE.tos-mon-only.img.arm-trusted-firmware
++sha256  9b0ccf575cfd9febc97b8f9967216f06341db2d44abc69df92c3127cc1a2608f  bootloader/LICENSE.mkbootimg
++sha256  bd28b0c5aeeb00eb11d3ec6f6f3449d4b3a40100914258332734a53527997526  bootloader/LICENSE.chkbdinfo
++sha256  bd28b0c5aeeb00eb11d3ec6f6f3449d4b3a40100914258332734a53527997526  bootloader/LICENSE.mkbctpart
++sha256  bd28b0c5aeeb00eb11d3ec6f6f3449d4b3a40100914258332734a53527997526  bootloader/LICENSE.mksparse
++sha256  bd28b0c5aeeb00eb11d3ec6f6f3449d4b3a40100914258332734a53527997526  bootloader/LICENSE.mkgpt
++sha256  3cc8cfbf77eb7f086d9b6f68de92251ebbcf13fd7a20fec2749cab30348bf9b1  bootloader/t210ref/LICENSE.cboot
++sha256  02df75a7f46ad14cdba9950ed4d5fc97b6c60efedb9c0241ecf61bc6c53fc904  bootloader/t210ref/LICENSE.sc7entry-firmware
+diff --git a/package/tegra210/tegra210.mk b/package/tegra210/tegra210.mk
+new file mode 100644
+index 0000000000..dcf2860a7b
+--- /dev/null
++++ b/package/tegra210/tegra210.mk
+@@ -0,0 +1,136 @@
++################################################################################
++#
++# Linux Tegra210 Board Support Package
++#
++################################################################################
++
++TEGRA210_VERSION = 32.4.2
++TEGRA210_SITE = https://developer.nvidia.com/embedded/L4T/r32_Release_v4.2/t210ref_release_aarch64
++TEGRA210_SOURCE = Tegra210_Linux_R$(TEGRA210_VERSION)_aarch64.tbz2
++# TODO: Double check this.
++TEGRA210_LICENSE = NVIDIA Customer Software Agreement
++TEGRA210_LICENSE_FILES = bootloader/LICENSE \
++			 bootloader/LICENSE.chkbdinfo \
++			 bootloader/LICENSE.mkbctpart \
++			 bootloader/LICENSE.mkbootimg \
++			 bootloader/LICENSE.mkgpt \
++			 bootloader/LICENSE.mksparse \
++			 bootloader/LICENSE.tos-mon-only.img.arm-trusted-firmware \
++			 bootloader/LICENSE.u-boot \
++			 bootloader/t210ref/LICENSE.cboot \
++			 bootloader/t210ref/LICENSE.sc7entry-firmware
++
++TEGRA210_REDISTRIBUTE = NO
++TEGRA210_INSTALL_IMAGES = YES
++TEGRA210_DEPENDENCIES = linux-nvidia linux uboot
++HOST_TEGRA210_DEPENDENCIES = host-python
++
++# Collects files required for tegraflash.py
++# Also updates the flash.xml config file with values for the Jetson Nano SD (p3450-0000)
++define TEGRA210_CONFIGURE_CMDS
++	cp $(@D)/bootloader/t210ref/nvtboot.bin $(@D)/bootloader/nvtboot.bin
++	cp $(@D)/bootloader/t210ref/cboot.bin $(@D)/bootloader/cboot.bin
++	cp $(@D)/bootloader/t210ref/warmboot.bin $(@D)/bootloader/warmboot.bin
++	cp $(@D)/bootloader/t210ref/sc7entry-firmware.bin $(@D)/bootloader/sc7entry-firmware.bin
++	cp $(@D)/bootloader/t210ref/BCT/P3448_A00_4GB_Micron_4GB_lpddr4_204Mhz_P987.cfg \
++		$(@D)/bootloader/P3448_A00_4GB_Micron_4GB_lpddr4_204Mhz_P987.cfg
++	cp $(@D)/bootloader/t210ref/cfg/flash_l4t_t210_spi_sd_p3448.xml $(@D)/bootloader/flash.xml
++
++	sed -i -e 's/NXC/NVC/' \
++		-e 's/NVCTYPE/bootloader/' \
++		-e 's/NVCFILE/nvtboot.bin/' \
++		-e 's/VERFILE/qspi_bootblob_ver.txt/g' \
++		-e 's/EBTFILE/cboot.bin/' \
++		-e 's/TBCFILE/nvtboot_cpu.bin/' \
++		-e 's/TXC/TBC/' \
++		-e 's/TXS/TOS/' \
++		-e 's/TOSFILE/tos-mon-only.img/' \
++		-e 's/TBCTYPE/bootloader/' \
++		-e 's/DTBFILE/tegra210-p3448-0000-p3449-0000-b00.dtb/' \
++		-e 's/WB0TYPE/WB0/' \
++		-e 's/WB0FILE/warmboot.bin/' \
++		-e 's/BXF/BPF/' \
++		-e 's/BPFFILE/sc7entry-firmware.bin/' \
++		-e 's/WX0/WB0/' \
++		-e 's/DXB/DTB/' \
++		-e 's/EXS/EKS/' \
++		-e 's/EKSFILE/eks.img/' \
++		-e 's/FBTYPE/data/' \
++		-e 's/LNXFILE/boot.img/' \
++		-e 's/APPUUID//' \
++		-e 's/APPFILE/system.img/' \
++		-e '/FBFILE/d' \
++		-e '/BPFDTB-FILE/d' \
++		-e "s/APPSIZE/"$(BR2_TARGET_ROOTFS_EXT2_SIZE)"/" \
++		$(@D)/bootloader/flash.xml
++endef
++
++define COPY_DTB_FOR_SIGNING
++	cp $(BINARIES_DIR)/tegra210-p3448-0000-p3449-0000-b00.dtb \
++		$(@D)/bootloader/tegra210-p3448-0000-p3449-0000-b00.dtb
++endef
++
++TEGRA210_PRE_BUILD_HOOKS += COPY_DTB_FOR_SIGNING
++
++define TEGRA210_BUILD_CMDS
++	cd $(@D)/bootloader && \
++	./mkbootimg --kernel $(BINARIES_DIR)/u-boot.bin \
++	--ramdisk /dev/null \
++	--board mmcblk0p1 \
++	--output $(@D)/bootloader/boot.img \
++	--cmdline 'root=/dev/mmcblk0p1 rw rootwait rootfstype=ext4 console=ttyS0,115200n8 console=tty0 fbcon=map:0 net.ifnames=0'
++
++	cd $(@D)/bootloader && \
++	./tegraflash.py --bl cboot.bin \
++	--bct P3448_A00_4GB_Micron_4GB_lpddr4_204Mhz_P987.cfg \
++	--odmdata 0x94000 \
++	--bldtb tegra210-p3448-0000-p3449-0000-b00.dtb \
++	--applet nvtboot_recovery.bin \
++	--cmd "sign" \
++	--cfg flash.xml \
++	--chip 0x21 \
++	--bins "EBT cboot.bin; DTB tegra210-p3448-0000-p3449-0000-b00.dtb"
++
++endef
++
++define TEGRA210_INSTALL_IMAGES_CMDS
++	$(INSTALL) -m 0644 $(@D)/bootloader/boot.img $(BINARIES_DIR)/boot.img
++	$(INSTALL) -m 0644 $(@D)/bootloader/bmp.blob $(BINARIES_DIR)/bmp.blob
++	$(INSTALL) -m 0644 $(@D)/bootloader/rp4.blob $(BINARIES_DIR)/rp4.blob
++	$(INSTALL) -m 0644 $(@D)/bootloader/eks.img $(BINARIES_DIR)/eks.img
++
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/boot.img.encrypt $(BINARIES_DIR)/boot.img.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/cboot.bin.encrypt $(BINARIES_DIR)/cboot.bin.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/flash.xml $(BINARIES_DIR)/flash.xml
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/flash.xml.bin $(BINARIES_DIR)/flash.xml.bin
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/nvtboot.bin.encrypt $(BINARIES_DIR)/nvtboot.bin.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/nvtboot_cpu.bin.encrypt $(BINARIES_DIR)/nvtboot_cpu.bin.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/P3448_A00_4GB_Micron_4GB_lpddr4_204Mhz_P987.bct \
++		$(BINARIES_DIR)/P3448_A00_4GB_Micron_4GB_lpddr4_204Mhz_P987.bct
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/sc7entry-firmware.bin.encrypt $(BINARIES_DIR)/sc7entry-firmware.bin.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt \
++		$(BINARIES_DIR)/tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/tos-mon-only.img.encrypt $(BINARIES_DIR)/tos-mon-only.img.encrypt
++	$(INSTALL) -m 0644 $(@D)/bootloader/signed/warmboot.bin.encrypt $(BINARIES_DIR)/warmboot.bin.encrypt
++endef
++
++define TEGRA210_INSTALL_TARGET_CMDS
++	$(INSTALL) -D -m 0644 $(@D)/bootloader/extlinux.conf $(TARGET_DIR)/boot/extlinux/extlinux.conf
++	$(INSTALL) -D -m 0644 $(@D)/bootloader/l4t_initrd.img $(TARGET_DIR)/boot/initrd
++	$(INSTALL) -D -m 0644 $(@D)/bootloader/nv_boot_control.conf $(TARGET_DIR)/etc/nv_boot_control.conf
++
++	sed -i /TNSPEC/d $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i '$$ a TNSPEC 3448-300---1-0-jetson-nano-qspi-sd-mmcblk0p1' $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i /TEGRA_CHIPID/d $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i '$$ a TEGRA_CHIPID 0x21' $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i /TEGRA_OTA_BOOT_DEVICE/d $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i '$$ a TEGRA_OTA_BOOT_DEVICE /dev/mtdblock0' $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i /TEGRA_OTA_GPT_DEVICE/d $(TARGET_DIR)/etc/nv_boot_control.conf
++	sed -i '$$ a TEGRA_OTA_GPT_DEVICE /dev/mtdblock0' $(TARGET_DIR)/etc/nv_boot_control.conf
++
++	$(INSTALL) -D -m 0644 -D $(@D)/bootloader/tegra210-p3448-0000-p3449-0000-b00.dtb \
++		$(TARGET_DIR)/boot/tegra210-p3448-0000-p3449-0000-b00.dtb
++endef
++
++$(eval $(generic-package))
++$(eval $(host-generic-package))
+-- 
+2.17.1
+

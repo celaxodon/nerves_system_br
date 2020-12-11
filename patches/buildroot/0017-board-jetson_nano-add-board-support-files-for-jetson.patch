@@ -1,0 +1,290 @@
+From 7bf9c54de2a31daa2bf0f7c2a24dec4b8b50a3e9 Mon Sep 17 00:00:00 2001
+From: Graham Leva <celaxodon@gmail.com>
+Date: Thu, 10 Dec 2020 14:24:39 -0600
+Subject: [PATCH 17/17] board/jetson_nano: add board support files for
+ jetson_nano
+
+Adds board/nvidia for jetson nano support files and other board
+files in the future.
+
+Adds config/jetson_nano_defconfig for minimal buildroot environment
+
+Signed-off-by: Graham Leva <celaxodon@gmail.com>
+---
+ board/nvidia/jetson_nano/genimage.cfg  | 120 +++++++++++++++++++++++++
+ board/nvidia/jetson_nano/post-image.sh |  40 +++++++++
+ board/nvidia/jetson_nano/readme.txt    |  29 ++++++
+ configs/jetson_nano_defconfig          |  51 +++++++++++
+ 4 files changed, 240 insertions(+)
+ create mode 100644 board/nvidia/jetson_nano/genimage.cfg
+ create mode 100755 board/nvidia/jetson_nano/post-image.sh
+ create mode 100644 board/nvidia/jetson_nano/readme.txt
+ create mode 100644 configs/jetson_nano_defconfig
+
+diff --git a/board/nvidia/jetson_nano/genimage.cfg b/board/nvidia/jetson_nano/genimage.cfg
+new file mode 100644
+index 0000000000..98a679698d
+--- /dev/null
++++ b/board/nvidia/jetson_nano/genimage.cfg
+@@ -0,0 +1,120 @@
++# A minimal SD card image for the NVIDIA p3450-0000 board
++# Generated with tegra210 BSP:
++# $ cd Linux_for_Tegra
++# $ ./tools/nvptparser.py bootloader/flash.xml sdcard
++#
++# part_num=2;part_name=TBC;part_size=131072;part_file=nvtboot_cpu.bin.encrypt
++# part_num=3;part_name=RP1;part_size=458752;part_file=tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt
++# part_num=4;part_name=EBT;part_size=589824;part_file=cboot.bin.encrypt
++# part_num=5;part_name=WB0;part_size=65536;part_file=warmboot.bin.encrypt
++# part_num=6;part_name=BPF;part_size=196608;part_file=sc7entry-firmware.bin.encrypt
++# part_num=7;part_name=BPF-DTB;part_size=393216;part_file=
++# part_num=8;part_name=FX;part_size=65536;part_file=
++# part_num=9;part_name=TOS;part_size=458752;part_file=tos-mon-only.img.encrypt
++# part_num=10;part_name=DTB;part_size=458752;part_file=tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt
++# part_num=11;part_name=LNX;part_size=786432;part_file=boot.img.encrypt
++# part_num=12;part_name=EKS;part_size=65536;part_file=eks.img
++# part_num=13;part_name=BMP;part_size=81920;part_file=bmp.blob
++# part_num=14;part_name=RP4;part_size=131072;part_file=rp4.blob
++# part_num=1;part_name=APP;part_size=137258598;part_file=system.img
++
++image sdcard.img {
++    # Contains primary GPT of the sdcard device.
++    # NOTE: Defaults to sectors aligned at 512 bytes
++    hdimage {
++        gpt = "true"
++    }
++
++    partition APP-PLACEHOLDER {
++        size = 128K
++    }
++
++    partition TBC {
++        image = "nvtboot_cpu.bin.encrypt"
++        size = 128K
++        offset = 1M
++    }
++
++    partition RP1 {
++        image = "tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt"
++        size = 448K
++        offset = 2M
++    }
++
++    partition EBT {
++        image = "cboot.bin.encrypt"
++        size = 576K
++        offset = 3M
++    }
++
++    partition WB0 {
++        image = "warmboot.bin.encrypt"
++        size = 64K
++        offset = 4M
++    }
++
++    partition BPF {
++        image = "sc7entry-firmware.bin.encrypt"
++        size = 192K
++        offset = 5M
++    }
++
++    # Optional - for future use by BPMP DTB binary
++    partition BPF-DTB {
++        size = 384K
++        offset = 6M
++    }
++
++    # Optional, reserved for fuse bypass
++    partition FX {
++        size = 64K
++        offset = 7M
++    }
++
++    partition TOS {
++        image = "tos-mon-only.img.encrypt"
++        size = 448K
++        offset = 8M
++    }
++
++    partition DTB {
++        image = "tegra210-p3448-0000-p3449-0000-b00.dtb.encrypt"
++        size = 448K
++        offset = 9M
++    }
++
++    partition LNX {
++        image = "boot.img.encrypt"
++        size = 768K
++        offset = 10M
++    }
++
++    partition EKS {
++        image = "eks.img"
++        size = 64K
++        offset = 11M
++    }
++
++    partition BMP {
++        image = "bmp.blob"
++        size = 80K
++        offset = 12M
++    }
++
++    partition RP4 {
++        image = "rp4.blob"
++        size = 128K
++        offset = 13M
++    }
++
++    # Should be the final partition, but number 1
++    partition APP {
++        # partition-type = 0x83
++        image = "rootfs.ext4"
++        size = 130M
++        # All other partitions take up about 3.7MiB
++        bootable = "yes"
++        offset = 14M
++    }
++
++}
+diff --git a/board/nvidia/jetson_nano/post-image.sh b/board/nvidia/jetson_nano/post-image.sh
+new file mode 100755
+index 0000000000..2277691547
+--- /dev/null
++++ b/board/nvidia/jetson_nano/post-image.sh
+@@ -0,0 +1,40 @@
++#!/usr/bin/env bash
++
++genimage_cmd()
++{
++    GENIMAGE_CFG="$(dirname $0)/genimage.cfg"
++    GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
++
++    rm -rf "${GENIMAGE_TMP}"
++
++    genimage \
++        --rootpath "${TARGET_DIR}" \
++        --tmppath "${GENIMAGE_TMP}" \
++        --inputpath "${BINARIES_DIR}" \
++        --outputpath "${BINARIES_DIR}" \
++        --config "${GENIMAGE_CFG}"
++}
++
++move_app_partition()
++{
++    # Nano requires APP partition to be partition 1 so it can be referenced as the
++    # fixed special device /dev/mmcblk0p1.
++    sgdisk ${BINARIES_DIR}/sdcard.img --transpose=15:1
++    sgdisk ${BINARIES_DIR}/sdcard.img -d 15
++    app_part=$(gdisk -l ${BINARIES_DIR}/sdcard.img | grep APP | awk {'print $1'})
++    if [[ "${app_part}" -eq 1 ]]; then
++        return 0
++    else
++        echo "sdcard.img APP partition not found in position 1. Found instead in position ${app_part}"
++        return 1
++    fi
++}
++
++main()
++{
++    genimage_cmd
++    move_app_partition
++    exit $?
++}
++
++main $@
+diff --git a/board/nvidia/jetson_nano/readme.txt b/board/nvidia/jetson_nano/readme.txt
+new file mode 100644
+index 0000000000..39d27a5ffd
+--- /dev/null
++++ b/board/nvidia/jetson_nano/readme.txt
+@@ -0,0 +1,29 @@
++Intro
++=====
++
++This default configuration currently only supports the NVIDIA Jetson Nano SD,
++board model p3450-0000. This configuration uses a custom U-Boot and kernel with
++custom extensions and also builds the device tree files.
++
++<link>
++
++How to build
++============
++
++    $ make jetson_nano_defconfig
++    $ make all
++
++Note: Requires internet connectivity to download NVIDIA packages and binaries.
++
++How to write the SD card
++========================
++
++Once the build process is finished, you will have an image called "sdcard.img"
++in the output/images/ directory.
++
++Copy the bootable "sdcard.img" onto an SD card with "dd":
++
++    $ sudo dd if=output/images/sdcard.img of=/dev/sdX
++    $ sudo sync
++
++Insert the micro SD card in your Jetson Nano and turn it on.
+diff --git a/configs/jetson_nano_defconfig b/configs/jetson_nano_defconfig
+new file mode 100644
+index 0000000000..e9d05186fd
+--- /dev/null
++++ b/configs/jetson_nano_defconfig
+@@ -0,0 +1,51 @@
++BR2_aarch64=y
++BR2_cortex_a57=y
++BR2_TOOLCHAIN_EXTERNAL=y
++BR2_TOOLCHAIN_EXTERNAL_CUSTOM=y
++BR2_TOOLCHAIN_EXTERNAL_DOWNLOAD=y
++BR2_TOOLCHAIN_EXTERNAL_URL="http://releases.linaro.org/components/toolchain/binaries/7.3-2018.05/aarch64-linux-gnu/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu.tar.xz"
++BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX="$(ARCH)-linux-gnu"
++BR2_TOOLCHAIN_EXTERNAL_GCC_7=y
++BR2_TOOLCHAIN_EXTERNAL_HEADERS_4_10=y
++BR2_TOOLCHAIN_EXTERNAL_CUSTOM_GLIBC=y
++BR2_TOOLCHAIN_EXTERNAL_CXX=y
++BR2_ROOTFS_DEVICE_CREATION_DYNAMIC_MDEV=y
++BR2_GENERATE_LOCALE="en_US"
++BR2_ROOTFS_POST_IMAGE_SCRIPT="board/nvidia/jetson_nano/post-image.sh"
++BR2_ROOTFS_POST_SCRIPT_ARGS="-c board/nvidia/jetson_nano/genimage.cfg"
++BR2_LINUX_KERNEL=y
++BR2_LINUX_KERNEL_CUSTOM_GIT=y
++BR2_LINUX_KERNEL_CUSTOM_REPO_URL="git://nv-tegra.nvidia.com/linux-4.9.git"
++BR2_LINUX_KERNEL_CUSTOM_REPO_VERSION="tegra-l4t-r32.4.2"
++BR2_LINUX_KERNEL_DEFCONFIG="tegra"
++BR2_LINUX_KERNEL_DTS_SUPPORT=y
++BR2_LINUX_KERNEL_INTREE_DTS_NAME="tegra210-p3448-0000-p3449-0000-b00"
++BR2_LINUX_KERNEL_INSTALL_TARGET=y
++BR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y
++BR2_LINUX_KERNEL_EXT_LINUX_NVIDIA=y
++BR2_PACKAGE_HARDWARE_NVIDIA=y
++BR2_PACKAGE_PLATFORM_T210_COMMON=y
++BR2_PACKAGE_PLATFORM_T210_JETSON=y
++BR2_PACKAGE_PLATFORM_T210_PORG=y
++BR2_PACKAGE_PLATFORM_TEGRA_COMMON=y
++BR2_PACKAGE_SOC_T210=y
++BR2_PACKAGE_SOC_TEGRA=y
++BR2_PACKAGE_DROPBEAR=y
++BR2_TARGET_ROOTFS_EXT2=y
++BR2_TARGET_ROOTFS_EXT2_4=y
++BR2_TARGET_ROOTFS_EXT2_SIZE="125M"
++BR2_TARGET_ROOTFS_EXT2_MKFS_OPTIONS=""
++BR2_TARGET_UBOOT=y
++BR2_TARGET_UBOOT_BUILD_SYSTEM_KCONFIG=y
++BR2_TARGET_UBOOT_CUSTOM_GIT=y
++BR2_TARGET_UBOOT_CUSTOM_REPO_URL="git://nv-tegra.nvidia.com/3rdparty/u-boot.git"
++BR2_TARGET_UBOOT_CUSTOM_REPO_VERSION="tegra-l4t-r32.4.2"
++BR2_TARGET_UBOOT_BOARD_DEFCONFIG="p3450-porg"
++BR2_TARGET_UBOOT_NEEDS_DTC=y
++BR2_TARGET_UBOOT_FORMAT_DTB_BIN=y
++BR2_TARGET_UBOOT_FORMAT_CUSTOM=y
++BR2_TARGET_UBOOT_FORMAT_CUSTOM_NAME="u-boot.dtb"
++BR2_PACKAGE_HOST_GENIMAGE=y
++BR2_PACKAGE_HOST_GPTFDISK=y
++BR2_PACKAGE_HOST_MKPASSWD=y
++BR2_PACKAGE_TEGRA210=y
+-- 
+2.17.1
+
