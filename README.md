@@ -55,8 +55,8 @@ Erlang build tools on your application.
     source build/nerves-env.sh
 
 In the above line, substitute `build` for whatever directory was used to build
-the Nerve System. If you downloaded a pre-built Nerves System, source the
-`nerves-env.sh` inside of it. When using a rebuilt system, the crosscompiler
+the Nerves System. If you downloaded a pre-built Nerves System, source the
+`nerves-env.sh` inside of it. When using a pre-built system, the crosscompiler
 toolchain must also be downloaded. See the
 [toolchains project](https://github.com/nerves-project/toolchains).  As stated
 before, the Nerves `mix` integration takes care of this for you.
